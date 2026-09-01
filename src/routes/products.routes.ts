@@ -1,39 +1,90 @@
 import { Router } from 'express';
-import { authenticate, authorize } from '../middleware/auth.js';
-import { db } from '../services/jsonDb.js';
-import type { Product } from '../types/index.js';
+import { authenticate } from '../middleware/auth.js';
+import { pool } from '../config/database.js';
 
 export const productsRouter = Router();
 
-productsRouter.get('/', authenticate, async (_req, res) => res.json(await db.products.all()));
+/**
+ * Vulnerable
+ * SQL Injection
+ */
+productsRouter.get('/', authenticate, async (req, res, next) => {
+  try {
+    const name = req.query.name;
 
-productsRouter.post('/', authenticate, authorize('ADMIN'), async (req, res) => {
-  const { name, price } = req.body ?? {};
-  if (typeof name !== 'string' || !name.trim() || typeof price !== 'number' || price < 0) {
-    res.status(400).json({ message: 'Valid name and price are required' }); return;
+    let query = 'SELECT id, name, price::float AS price FROM products ORDER BY id';
+
+    if (typeof name === 'string' && name.length > 0) {
+      query = `SELECT id, name, price::float AS price FROM products WHERE name = '${name}' ORDER BY id`;
+    }
+
+    const result = await pool.query(query);
+    res.json(result.rows);
+  } catch (error) {
+    next(error);
   }
-  const products = await db.products.all();
-  const product: Product = { id: products.length ? Math.max(...products.map(p => p.id)) + 1 : 1, name: name.trim(), price };
-  products.push(product);
-  await db.products.save(products);
-  res.status(201).json(product);
 });
 
-productsRouter.put('/:id', authenticate, authorize('ADMIN'), async (req, res) => {
-  const id = Number(req.params.id);
-  const products = await db.products.all();
-  const index = products.findIndex(p => p.id === id);
-  if (!Number.isInteger(id)) { res.status(400).json({ message: 'Invalid product id' }); return; }
-  if (index === -1) { res.status(404).json({ message: 'Product not found' }); return; }
+/**
+ * Vulnerbale
+ * Falta Autorización Admin
+ */
+productsRouter.post('/', authenticate, async (req, res, next) => {
+  try {
+    const { name, price } = req.body ?? {};
 
-  if (req.body?.name !== undefined) {
-    if (typeof req.body.name !== 'string' || !req.body.name.trim()) { res.status(400).json({ message: 'Invalid name' }); return; }
-    products[index].name = req.body.name.trim();
+    if (typeof name !== 'string' || !name.trim() || typeof price !== 'number' || price < 0) {
+      res.status(400).json({ message: 'Valid name and price are required' });
+      return;
+    }
+
+    const result = await pool.query(
+      `INSERT INTO products (name, price)
+       VALUES ($1, $2)
+       RETURNING id, name, price::float AS price`,
+      [name.trim(), price]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    next(error);
   }
-  if (req.body?.price !== undefined) {
-    if (typeof req.body.price !== 'number' || req.body.price < 0) { res.status(400).json({ message: 'Invalid price' }); return; }
-    products[index].price = req.body.price;
+});
+
+/**
+ * VULNERABLE
+ * Autorización por ROl falta.
+ */
+productsRouter.put('/:id', authenticate, async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const { name, price } = req.body ?? {};
+
+    if (!Number.isInteger(id)) {
+      res.status(400).json({ message: 'Invalid product id' });
+      return;
+    }
+
+    if (typeof name !== 'string' || !name.trim() || typeof price !== 'number' || price < 0) {
+      res.status(400).json({ message: 'Valid name and price are required' });
+      return;
+    }
+
+    const result = await pool.query(
+      `UPDATE products
+       SET name = $1, price = $2
+       WHERE id = $3
+       RETURNING id, name, price::float AS price`,
+      [name.trim(), price, id]
+    );
+
+    if (result.rowCount === 0) {
+      res.status(404).json({ message: 'Product not found' });
+      return;
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    next(error);
   }
-  await db.products.save(products);
-  res.json(products[index]);
 });

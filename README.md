@@ -1,68 +1,49 @@
-# SecureShop Backend
+# SafeAShop Backend - PostgreSQL - Vulnerable Lab Version
 
-Backend local para SecureShop usando Node.js + Express + TypeScript y archivos JSON para simular PostgreSQL.
+This is the intentionally vulnerable version used before remediation.
+Run it only in a local/controlled lab environment.
 
-## Usuarios dummy
+## Requirements
 
-| Usuario | Password | Rol |
-|---|---|---|
-| `admin` | `Admin123!` | ADMIN |
-| `cliente1` | `Cliente123!` | CUSTOMER |
-| `cliente2` | `Cliente123!` | CUSTOMER |
+- Node.js 18+
+- PostgreSQL 16
+- Database named `safeashop`
 
-> Las contraseñas dummy están en texto plano únicamente porque `users.json` funciona como una base de datos simulada para el laboratorio. Esto será un hallazgo de seguridad útil para la fase de auditoría y posteriormente puede remediarse con hashing.
+## Setup
 
-## Ejecutar en PowerShell
+1. Install dependencies:
 
-```powershell
-npm install
-Copy-Item .env.example .env
-npm run dev
-```
+   npm install
 
-API: `http://localhost:3000`
+2. Create `.env` from `.env.example` and update `DB_PASSWORD`.
 
-## Endpoints
+3. Create the database in PostgreSQL:
 
-- `GET /health`
-- `POST /api/login`
-- `GET /api/products`
-- `POST /api/products` — ADMIN
-- `PUT /api/products/:id` — ADMIN
-- `POST /api/orders` — autenticado
-- `GET /api/orders/:id` — propietario o ADMIN
+   CREATE DATABASE safeashop;
 
-## Login
+4. Run `database/init.sql` against the `safeashop` database.
 
-```json
-{
-  "username": "cliente1",
-  "password": "Cliente123!"
-}
-```
+5. Start the API:
 
-Las rutas protegidas usan:
+   npm run dev
 
-```text
-Authorization: Bearer <token>
-```
+6. Health check:
 
-## Persistencia JSON
+   GET http://localhost:3000/health
 
-- `src/data/users.json`
-- `src/data/products.json`
-- `src/data/orders.json`
+## Dummy users
 
-Las altas y modificaciones se escriben directamente en esos archivos.
+- admin / Admin123! / ADMIN
+- cliente1 / Cliente123! / CUSTOMER
+- cliente2 / Cliente123! / CUSTOMER
 
-## Seguridad implementada
+## Intentionally vulnerable controls
 
-- JWT con expiración.
-- RBAC para endpoints administrativos.
-- Validación BOLA para pedidos.
-- Validación básica de entradas.
-- CORS configurable.
+- SQL Injection: `GET /api/products?name=...` concatenates the `name` value into SQL.
+- Broken RBAC: authenticated CUSTOMER users can call `POST /api/products` and `PUT /api/products/:id`.
+- BOLA/IDOR: `GET /api/orders/:id` does not verify order ownership.
+- Weak JWT configuration: predictable/default secret and no issuer/audience checks.
+- Plaintext passwords in PostgreSQL.
+- No rate limiting on `/api/login`.
 
-## Importante para la rúbrica
-
-Al usar archivos JSON no existe SQL real, por lo que una PoC auténtica de SQL Injection no puede ejecutarse contra esta versión. La capa `src/services/jsonDb.ts` está separada para reemplazarla después por PostgreSQL y consultas parametrizadas sin cambiar los endpoints.
+These weaknesses are intentional and are intended to be fixed in the remediation phase.
