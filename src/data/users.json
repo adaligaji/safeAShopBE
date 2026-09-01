@@ -1,0 +1,5 @@
+[
+  {"id":1,"username":"admin","password":"Admin123!","role":"ADMIN","name":"Administrador"},
+  {"id":2,"username":"cliente1","password":"Cliente123!","role":"CUSTOMER","name":"Cliente Uno"},
+  {"id":3,"username":"cliente2","password":"Cliente123!","role":"CUSTOMER","name":"Cliente Dos"}
+]

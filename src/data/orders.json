@@ -1,0 +1,31 @@
+[
+  {"id":1,"userId":2,"productId":1,"quantity":1,"createdAt":"2026-08-30T14:00:00.000Z"},
+  {"id":2,"userId":3,"productId":2,"quantity":2,"createdAt":"2026-08-30T15:30:00.000Z"}
+]
+# recreate files that were not reached after prior failure
+cat > src/services/jsonDb.ts <<'EOF'
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import type { Order, Product, User } from '../types/index.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const dataDir = path.resolve(__dirname, '../data');
+
+async function readJson<T>(fileName: string): Promise<T> {
+  const fullPath = path.join(dataDir, fileName);
+  const raw = await fs.readFile(fullPath, 'utf-8');
+  return JSON.parse(raw) as T;
+}
+
+async function writeJson<T>(fileName: string, data: T): Promise<void> {
+  const fullPath = path.join(dataDir, fileName);
+  await fs.writeFile(fullPath, JSON.stringify(data, null, 2), 'utf-8');
+}
+
+export const db = {
+  users: { all: () => readJson<User[]>('users.json') },
+  products: { all: () => readJson<Product[]>('products.json'), save: (data: Product[]) => writeJson('products.json', data) },
+  orders: { all: () => readJson<Order[]>('orders.json'), save: (data: Order[]) => writeJson('orders.json', data) }
+};
