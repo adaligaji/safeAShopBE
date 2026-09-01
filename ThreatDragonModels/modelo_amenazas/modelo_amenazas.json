@@ -1,19 +1,12 @@
 {
   "summary": {
-    "title": "Threat Model",
+    "title": "SafeAShop Threat Model",
     "owner": "Adalí Garrán",
-    "description": "A sample model of a web application, with a queue-decoupled background process.",
+    "description": "Modelo de amenazas STRIDE de SafeAShop. Incluye DFD Nivel 1, dos límites de confianza y amenazas asociadas a autenticación, productos, órdenes y PostgreSQL.",
     "id": 0
   },
   "detail": {
-    "contributors": [
-      {
-        "name": "Tom Brown"
-      },
-      {
-        "name": "Albert Moneypenny"
-      }
-    ],
+    "contributors": [],
     "diagrams": [
       {
         "cells": [
@@ -305,7 +298,7 @@
               "hasOpenThreats": false,
               "handlesCardPayment": false,
               "handlesGoodsOrServices": false,
-              "isWebApplication": false,
+              "isWebApplication": true,
               "privilegeLevel": "",
               "threats": []
             }
@@ -384,9 +377,9 @@
               "reasonOutOfScope": "",
               "hasOpenThreats": false,
               "isBidirectional": false,
-              "isEncrypted": false,
-              "isPublicNetwork": false,
-              "protocol": "",
+              "isEncrypted": true,
+              "isPublicNetwork": true,
+              "protocol": "HTTPS",
               "threats": [],
               "trustBoundaryIds": []
             },
@@ -431,9 +424,9 @@
               "reasonOutOfScope": "",
               "hasOpenThreats": false,
               "isBidirectional": false,
-              "isEncrypted": false,
-              "isPublicNetwork": false,
-              "protocol": "",
+              "isEncrypted": true,
+              "isPublicNetwork": true,
+              "protocol": "HTTPS",
               "threats": [],
               "trustBoundaryIds": []
             },
@@ -483,9 +476,9 @@
               "reasonOutOfScope": "",
               "hasOpenThreats": false,
               "isBidirectional": false,
-              "isEncrypted": false,
-              "isPublicNetwork": false,
-              "protocol": "",
+              "isEncrypted": true,
+              "isPublicNetwork": true,
+              "protocol": "HTTPS",
               "threats": [],
               "trustBoundaryIds": []
             },
@@ -549,7 +542,7 @@
               "isBidirectional": false,
               "isEncrypted": false,
               "isPublicNetwork": false,
-              "protocol": "",
+              "protocol": "SQL",
               "threats": [],
               "trustBoundaryIds": []
             },
@@ -601,13 +594,30 @@
               "outOfScope": false,
               "isTrustBoundary": false,
               "reasonOutOfScope": "",
-              "hasOpenThreats": false,
+              "hasOpenThreats": true,
               "isBidirectional": false,
               "isEncrypted": false,
               "isPublicNetwork": false,
-              "protocol": "",
-              "threats": [],
-              "trustBoundaryIds": []
+              "protocol": "SQL",
+              "threats": [
+                {
+                  "id": "c21ab8bc-e5ee-426a-8fad-ead5128a0e7e",
+                  "title": "Inyección SQL mediante parámetros manipulados",
+                  "status": "Open",
+                  "severity": "TBD",
+                  "type": "Tampering",
+                  "description": "Un atacante introduce valores manipulados en campos que llegan a la consulta de usuarios con el objetivo de alterar la semántica de la consulta SQL.",
+                  "mitigation": "Utilizar consultas parametrizadas o prepared statements para todos los valores controlados por el usuario y validar los parámetros de entrada.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 3,
+                  "score": ""
+                }
+              ],
+              "trustBoundaryIds": [],
+              "threatFrequency": {
+                "tampering": 1
+              }
             },
             "labels": [
               "CRUD\nUsuarios"
@@ -652,7 +662,7 @@
               "isBidirectional": false,
               "isEncrypted": false,
               "isPublicNetwork": false,
-              "protocol": "",
+              "protocol": "SQL",
               "threats": [],
               "trustBoundaryIds": []
             },
@@ -794,12 +804,12 @@
               "threats": [
                 {
                   "id": "866b1b36-84ef-4a83-b413-8db2908d774b",
-                  "title": "New STRIDE threat",
+                  "title": "Manipulación de parámetros de productos",
                   "status": "Open",
                   "severity": "TBD",
                   "type": "Tampering",
-                  "description": "Un atacante altera parámetros como productId, quantity, price",
-                  "mitigation": "Provide remediation for this threat or a reason if status is N/A",
+                  "description": "Un atacante manipula parámetros como productId, name o price para intentar alterar información del catálogo de productos.",
+                  "mitigation": "Validar y normalizar los datos de entrada en el backend, aplicar reglas de negocio y evitar confiar en valores sensibles enviados por el cliente.",
                   "modelType": "STRIDE",
                   "new": false,
                   "number": 2,
@@ -807,12 +817,12 @@
                 },
                 {
                   "id": "d54c1603-019a-42c6-b072-f77a32e07b77",
-                  "title": "New STRIDE threat",
+                  "title": "Saturación del servicio de productos",
                   "status": "Open",
                   "severity": "TBD",
                   "type": "Denial of service",
                   "description": "Un atacante realiza gran cantidad de solicitudes a productos o envía peticiones costosas repetidamente hasta agotar recursos del backend.",
-                  "mitigation": "",
+                  "mitigation": "Aplicar rate limiting, límites de tamaño de payload, paginación, timeouts y límites de consumo de recursos.",
                   "modelType": "STRIDE",
                   "new": false,
                   "number": 8,
@@ -820,25 +830,36 @@
                 },
                 {
                   "id": "6f9ffaa0-9fdd-495e-b340-3ea64172d118",
-                  "title": "New STRIDE threat",
+                  "title": "Acceso de USER a funciones ADMIN",
                   "status": "Open",
                   "severity": "TBD",
                   "type": "Elevation of privilege",
-                  "description": "Un usuario con rol USER invoca directamente POST /api/products o PUT /api/products/:id y logra ejecutar operaciones reservadas a administradores.",
-                  "mitigation": "",
+                  "description": "Un usuario con rol USER invoca directamente POST /api/products o PUT /api/products/:id e intenta ejecutar operaciones reservadas a administradores.",
+                  "mitigation": "Implementar autorización RBAC en el backend y restringir las operaciones administrativas de productos al rol ADMIN, aplicando mínimo privilegio.",
                   "modelType": "STRIDE",
                   "new": false,
                   "number": 11,
                   "score": ""
+                },
+                {
+                  "id": "ac9a0683-de3b-4d55-8baa-cde23b0b42c9",
+                  "title": "Falta de trazabilidad de operaciones administrativas",
+                  "status": "Open",
+                  "severity": "TBD",
+                  "type": "Repudiation",
+                  "description": "Un administrador modifica un producto y posteriormente niega haber realizado el cambio porque la aplicación no registra adecuadamente quién ejecutó la operación, cuándo y sobre qué recurso.",
+                  "mitigation": "Registrar operaciones sensibles con usuario autenticado, acción, recurso afectado, fecha y hora, resultado y un identificador de correlación; proteger los logs contra alteración.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 4,
+                  "score": ""
                 }
               ],
               "threatFrequency": {
-                "spoofing": 0,
                 "tampering": 1,
-                "repudiation": 0,
-                "informationDisclosure": 0,
                 "denialOfService": 1,
-                "elevationOfPrivilege": 1
+                "elevationOfPrivilege": 1,
+                "repudiation": 1
               }
             },
             "zIndex": 13
@@ -962,12 +983,12 @@
               "threats": [
                 {
                   "id": "4b5e7faa-93eb-4327-bb08-b7750179acc3",
-                  "title": "New STRIDE threat",
+                  "title": "Acceso no autorizado a órdenes mediante BOLA/IDOR",
                   "status": "Open",
                   "severity": "TBD",
                   "type": "Information disclosure",
                   "description": "Un usuario cambia el identificador en GET /api/orders/:id y obtiene una orden perteneciente a otra cuenta si solo se valida que la orden exista.",
-                  "mitigation": "",
+                  "mitigation": "Validar en el backend que la orden solicitada pertenezca al usuario autenticado antes de retornar el recurso; aplicar autorización a nivel de objeto.",
                   "modelType": "STRIDE",
                   "new": false,
                   "number": 5,
@@ -975,12 +996,12 @@
                 },
                 {
                   "id": "4ee18dd1-4a15-4caf-a799-9e5532c19355",
-                  "title": "New STRIDE threat",
+                  "title": "Saturación del servicio de órdenes",
                   "status": "Open",
                   "severity": "TBD",
                   "type": "Denial of service",
                   "description": "Un atacante realiza gran cantidad de solicitudes a órdenes o envía peticiones costosas repetidamente hasta agotar recursos del backend.",
-                  "mitigation": "Provide remediation for this threat or a reason if status is N/A",
+                  "mitigation": "Aplicar rate limiting, paginación cuando corresponda, límites de payload, timeouts y monitoreo de consumo de recursos.",
                   "modelType": "STRIDE",
                   "new": false,
                   "number": 10,
@@ -988,12 +1009,8 @@
                 }
               ],
               "threatFrequency": {
-                "spoofing": 0,
-                "tampering": 0,
-                "repudiation": 0,
                 "informationDisclosure": 1,
-                "denialOfService": 1,
-                "elevationOfPrivilege": 0
+                "denialOfService": 1
               }
             },
             "zIndex": 15
@@ -1117,12 +1134,12 @@
               "threats": [
                 {
                   "id": "c038cc28-f8a5-47b8-ae5c-335d04fc7e0e",
-                  "title": "New STRIDE threat",
+                  "title": "Suplantación mediante JWT manipulado",
                   "status": "Open",
                   "severity": "TBD",
                   "type": "Spoofing",
-                  "description": "Un atacante intenta modificar o falsificar un JWT para hacerse pasar por otro usuario o por un administrador.escription for this threat",
-                  "mitigation": "",
+                  "description": "Un atacante intenta modificar o falsificar un JWT para hacerse pasar por otro usuario o por un administrador.",
+                  "mitigation": "Verificar la firma del JWT, aceptar únicamente algoritmos permitidos, validar la expiración y rechazar tokens sin firma o manipulados.",
                   "modelType": "STRIDE",
                   "new": false,
                   "number": 1,
@@ -1130,12 +1147,12 @@
                 },
                 {
                   "id": "4a85199b-ff35-48fc-8390-1332bbbb0906",
-                  "title": "New STRIDE threat",
+                  "title": "Saturación del servicio de autenticación",
                   "status": "Open",
                   "severity": "TBD",
                   "type": "Denial of service",
-                  "description": "Un atacante realiza gran cantidad de solicitudes a login o envía peticiones costosas repetidamente hasta agotar recursos del backend.",
-                  "mitigation": "",
+                  "description": "Un atacante realiza gran cantidad de solicitudes al endpoint de login hasta agotar recursos del backend o degradar el servicio.",
+                  "mitigation": "Aplicar rate limiting específico al login, límites por IP/usuario, timeouts y monitoreo de intentos anómalos.",
                   "modelType": "STRIDE",
                   "new": false,
                   "number": 9,
@@ -1144,11 +1161,7 @@
               ],
               "threatFrequency": {
                 "spoofing": 1,
-                "tampering": 0,
-                "repudiation": 0,
-                "informationDisclosure": 0,
-                "denialOfService": 1,
-                "elevationOfPrivilege": 0
+                "denialOfService": 1
               }
             },
             "zIndex": 16
@@ -1274,30 +1287,17 @@
               "isALog": false,
               "isEncrypted": false,
               "isSigned": false,
-              "storesCredentials": false,
-              "storesInventory": false,
+              "storesCredentials": true,
+              "storesInventory": true,
               "threats": [
                 {
-                  "id": "c21ab8bc-e5ee-426a-8fad-ead5128a0e7e",
-                  "title": "New STRIDE threat",
-                  "status": "Open",
-                  "severity": "TBD",
-                  "type": "Tampering",
-                  "description": "Atacante modifica entradas enviadas a consultas SQL con el objetivo de modificar el comportamiento de la aplicación.",
-                  "mitigation": "",
-                  "modelType": "STRIDE",
-                  "new": false,
-                  "number": 3,
-                  "score": ""
-                },
-                {
                   "id": "af035f34-8047-4b65-88b0-8318d98999fe",
-                  "title": "New STRIDE threat",
+                  "title": "Saturación de PostgreSQL",
                   "status": "Open",
                   "severity": "TBD",
                   "type": "Denial of service",
-                  "description": "Un atacante realiza gran cantidad de solicitudes o envía peticiones costosas repetidamente hasta agotar recursos de la DB.",
-                  "mitigation": "",
+                  "description": "Un atacante genera solicitudes o consultas costosas de forma repetida hasta agotar conexiones, CPU o memoria de la base de datos.",
+                  "mitigation": "Aplicar límites de conexiones, timeouts, consultas eficientes, paginación y mecanismos de rate limiting en la API para reducir presión sobre PostgreSQL.",
                   "modelType": "STRIDE",
                   "new": false,
                   "number": 6,
@@ -1305,9 +1305,6 @@
                 }
               ],
               "threatFrequency": {
-                "tampering": 1,
-                "repudiation": 0,
-                "informationDisclosure": 0,
                 "denialOfService": 1
               }
             }
@@ -1420,31 +1417,14 @@
             "data": {
               "type": "tm.Actor",
               "name": "Zona 2 - API Backend (Controlada / Expuesta)                                                                                                                                                               \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
-              "description": "",
+              "description": "Contenedor visual de zona de confianza; no representa una entidad externa del sistema.",
               "isTrustBoundary": false,
               "outOfScope": false,
               "reasonOutOfScope": "",
-              "hasOpenThreats": true,
+              "hasOpenThreats": false,
               "providesAuthentication": false,
-              "threats": [
-                {
-                  "id": "ac9a0683-de3b-4d55-8baa-cde23b0b42c9",
-                  "title": "New STRIDE threat",
-                  "status": "Open",
-                  "severity": "TBD",
-                  "type": "Repudiation",
-                  "description": "Un administrador modifica un producto y posteriormente niega haber realizado el cambio porque la aplicación no registra adecuadamente quién ejecutó la operación, cuándo y sobre qué recurso.",
-                  "mitigation": "",
-                  "modelType": "STRIDE",
-                  "new": false,
-                  "number": 4,
-                  "score": ""
-                }
-              ],
-              "threatFrequency": {
-                "spoofing": 0,
-                "repudiation": 1
-              }
+              "threats": [],
+              "threatFrequency": {}
             }
           },
           {
@@ -1554,7 +1534,7 @@
             "data": {
               "type": "tm.Actor",
               "name": "Zona 1 - Internet (No confiable)                                                                                                                                                               \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
-              "description": "",
+              "description": "Contenedor visual de zona de confianza; no representa una entidad externa del sistema.",
               "isTrustBoundary": false,
               "outOfScope": false,
               "reasonOutOfScope": "",
@@ -1671,7 +1651,7 @@
             "data": {
               "type": "tm.Actor",
               "name": "Zona 3 - Datos (Restringida)                                                                                                                                                                                      \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
-              "description": "",
+              "description": "Contenedor visual de zona de confianza; no representa una entidad externa del sistema.",
               "isTrustBoundary": false,
               "outOfScope": false,
               "reasonOutOfScope": "",
@@ -1683,8 +1663,8 @@
           }
         ],
         "version": "2.6.2",
-        "title": "Main Request Data Flow",
-        "description": "",
+        "title": "SafeAShop - DFD Nivel 1",
+        "description": "DFD Nivel 1 del estado inicial de SafeAShop antes de remediación.",
         "thumbnail": "./public/content/images/thumbnail.stride.jpg",
         "diagramType": "STRIDE",
         "id": 0
