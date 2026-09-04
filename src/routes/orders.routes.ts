@@ -43,20 +43,24 @@ ordersRouter.post('/', authenticate, async (req, res, next) => {
 });
 
 /**
- * DÉBIL - BOLA/IDOR
- * Order solo por id. No revisa autorización.
+ * Correccióm - BOLA/IDOR
+ * Order revisa ID y autorización 
  */
 ordersRouter.get('/:id', authenticate, async (req, res, next) => {
   try {
     const id = Number(req.params.id);
+    const userID = Number(req.user!.sub);
+    const isAdmin = req.user!.role === 'ADMIN';
+    let result;
 
     if (!Number.isInteger(id)) {
       res.status(400).json({ message: 'Invalid order id' });
       return;
     }
 
-    const result = await pool.query(
-      `SELECT
+    if (isAdmin) {
+      result = await pool.query(
+        `SELECT
          o.id,
          o.user_id AS "userId",
          o.product_id AS "productId",
@@ -71,8 +75,30 @@ ordersRouter.get('/:id', authenticate, async (req, res, next) => {
        FROM orders o
        JOIN products p ON p.id = o.product_id
        WHERE o.id = $1`,
-      [id]
-    );
+        [id]
+      );
+    } else {
+      result = await pool.query(
+        `SELECT
+         o.id,
+         o.user_id AS "userId",
+         o.product_id AS "productId",
+         o.quantity,
+         o.created_at AS "createdAt",
+         json_build_object(
+           'id', p.id,
+           'name', p.name,
+           'price', p.price::float
+         ) AS product,
+         (p.price * o.quantity)::float AS total
+       FROM orders o
+       JOIN products p ON p.id = o.product_id
+       WHERE o.id = $1
+       AND o.user_id = $2`,
+        [id, userID]
+      );
+    }
+
 
     if (result.rowCount === 0) {
       res.status(404).json({ message: 'Order not found' });

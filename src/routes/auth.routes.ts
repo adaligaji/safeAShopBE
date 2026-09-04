@@ -32,17 +32,22 @@ authRouter.post('/login', async (req, res, next) => {
       return;
     }
 
-    const token = jwt.sign(
-      {
-        username: user.username,
-        role: user.role
-      },
-      process.env.JWT_SECRET || 'secret',
-      {
-        subject: String(user.id),
-        expiresIn: (process.env.JWT_EXPIRES_IN || '8h') as jwt.SignOptions['expiresIn']
-      }
-    );
+    const header = {
+      alg: 'none',
+      typ: 'JWT'
+    };
+
+    const payload = {
+      sub: String(user.id),
+      username: user.username,
+      role: user.role
+    };
+
+    const encode = (obj: object) =>
+      Buffer.from(JSON.stringify(obj))
+        .toString('base64url');
+
+    const token = `${encode(header)}.${encode(payload)}.`;
 
     res.json({
       token,

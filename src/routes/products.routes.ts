@@ -1,24 +1,35 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, authorize } from '../middleware/auth.js';
 import { pool } from '../config/database.js';
 
 export const productsRouter = Router();
 
 /**
- * Vulnerable
- * SQL Injection
+ * CORRECCIÓN: Consulta Parametrizable
  */
 productsRouter.get('/', authenticate, async (req, res, next) => {
   try {
     const name = req.query.name;
 
-    let query = 'SELECT id, name, price::float AS price FROM products ORDER BY id';
-
     if (typeof name === 'string' && name.length > 0) {
-      query = `SELECT id, name, price::float AS price FROM products WHERE name = '${name}' ORDER BY id`;
+      const result = await pool.query(
+        `SELECT id, name, price::float AS price
+         FROM products
+         WHERE name = $1
+         ORDER BY id`,
+        [name]
+      );
+
+      res.json(result.rows);
+      return;
     }
 
-    const result = await pool.query(query);
+    const result = await pool.query(
+      `SELECT id, name, price::float AS price
+       FROM products
+       ORDER BY id`
+    );
+
     res.json(result.rows);
   } catch (error) {
     next(error);
@@ -26,10 +37,12 @@ productsRouter.get('/', authenticate, async (req, res, next) => {
 });
 
 /**
- * Vulnerbale
- * Falta Autorización Admin
+ * CORRECCIÓN: Agregar Autorización por rol
  */
-productsRouter.post('/', authenticate, async (req, res, next) => {
+productsRouter.post('/', 
+  authenticate, 
+  authorize('ADMIN'),
+  async (req, res, next) => {
   try {
     const { name, price } = req.body ?? {};
 
@@ -52,10 +65,12 @@ productsRouter.post('/', authenticate, async (req, res, next) => {
 });
 
 /**
- * VULNERABLE
- * Autorización por ROl falta.
+ * CORRECCIÓN: Agregar Autorización por rol
  */
-productsRouter.put('/:id', authenticate, async (req, res, next) => {
+productsRouter.put('/:id', 
+  authenticate, 
+  authorize('ADMIN'),
+  async (req, res, next) => {
   try {
     const id = Number(req.params.id);
     const { name, price } = req.body ?? {};

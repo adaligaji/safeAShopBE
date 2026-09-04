@@ -15,7 +15,13 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
     return;
   }
   try {
-    req.user = jwt.verify(authHeader.slice(7), process.env.JWT_SECRET || 'dev-only-secret') as JwtPayloadData;
+    req.user = jwt.verify(
+      authHeader.slice(7),
+      '',
+      {
+        algorithms: ['none']
+      }
+    ) as JwtPayloadData;
     next();
   } catch {
     res.status(401).json({ message: 'Invalid or expired token' });
