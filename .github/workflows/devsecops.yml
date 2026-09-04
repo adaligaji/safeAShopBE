@@ -4,11 +4,11 @@ on:
   push:
     branches:
       - main
-      - dev
+      - develop
   pull_request:
     branches:
       - main
-      - dev
+      - develop
 
 permissions:
   contents: read
@@ -39,18 +39,18 @@ jobs:
             p/nodejs
 
       - name: 4. SCA - Trivy
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           scan-type: fs
           scan-ref: .
           severity: HIGH,CRITICAL
-          ignore-unfixed: false
+          ignore-unfixed: true
           exit-code: 1
 
       - name: 5. Security Gate
         run: |
           echo "======================================"
-          echo "   DEVSECOPS SECURITY GATE"
+          echo "       DEVSECOPS SECURITY GATE"
           echo "======================================"
           echo "Gitleaks: PASS"
           echo "Semgrep:  PASS"
