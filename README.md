@@ -37,13 +37,4 @@ Run it only in a local/controlled lab environment.
 - cliente1 / Cliente123! / CUSTOMER
 - cliente2 / Cliente123! / CUSTOMER
 
-## Intentionally vulnerable controls
 
-- SQL Injection: `GET /api/products?name=...` concatenates the `name` value into SQL.
-- Broken RBAC: authenticated CUSTOMER users can call `POST /api/products` and `PUT /api/products/:id`.
-- BOLA/IDOR: `GET /api/orders/:id` does not verify order ownership.
-- Weak JWT configuration: predictable/default secret and no issuer/audience checks.
-- Plaintext passwords in PostgreSQL.
-- No rate limiting on `/api/login`.
-
-These weaknesses are intentional and are intended to be fixed in the remediation phase.
