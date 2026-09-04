@@ -11,17 +11,24 @@ productsRouter.get('/', authenticate, async (req, res, next) => {
   try {
     const name = req.query.name;
 
-    let query = 'SELECT id, name, price::float AS price FROM products ORDER BY id';
-
     if (typeof name === 'string' && name.length > 0) {
-      query = `SELECT id, name, price::float AS price FROM products WHERE name = '${name}' ORDER BY id`;
+      const result = await pool.query(
+        `SELECT id, name, price::float AS price
+         FROM products
+         WHERE name = $1
+         ORDER BY id`,
+        [name]
       );
 
       res.json(result.rows);
       return;
     }
 
-    const result = await pool.query(query);
+    const result = await pool.query(
+      `SELECT id, name, price::float AS price
+       FROM products
+       ORDER BY id`
+    );
 
     res.json(result.rows);
   } catch (error) {
