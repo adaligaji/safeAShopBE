@@ -1,3 +1,4 @@
+```yaml
 name: DevSecOps CI
 
 on:
@@ -52,6 +53,7 @@ jobs:
             p/owasp-top-ten
             p/javascript
             p/nodejs
+            .semgrep/sql-injection.yml
 
 
   # =====================================================
@@ -73,3 +75,4 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: 1
+```
