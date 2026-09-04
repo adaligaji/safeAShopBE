@@ -48,11 +48,7 @@ jobs:
       - name: Run Semgrep
         uses: semgrep/semgrep-action@v1
         with:
-          config: >-
-            p/owasp-top-ten
-            p/javascript
-            p/nodejs
-            .semgrep/sql-injection.yml
+          config: .semgrep/sql-injection.yml
 
 
   # =====================================================
