@@ -32,23 +32,25 @@ authRouter.post('/login', async (req, res, next) => {
       return;
     }
 
-    const header = {
-      alg: 'none',
-      typ: 'JWT'
-    };
+    const secret = process.env.JWT_SECRET;
 
-    const payload = {
-      sub: String(user.id),
-      username: user.username,
-      role: user.role
-    };
+    if (!secret) {
+      throw new Error('JWT_SECRET is not configured');
+    }
 
-    const encode = (obj: object) =>
-      Buffer.from(JSON.stringify(obj))
-        .toString('base64url');
-
-    const token = `${encode(header)}.${encode(payload)}.`;
-
+    const token = jwt.sign(
+      {
+        username: user.username,
+        role: user.role
+      },
+      secret,
+      {
+        subject: String(user.id),
+        algorithm: 'HS256',
+        expiresIn: (process.env.JWT_EXPIRES_IN || '8h') as jwt.SignOptions['expiresIn']
+      }
+    );
+    
     res.json({
       token,
       user: {

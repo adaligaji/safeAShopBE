@@ -14,14 +14,18 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
     res.status(401).json({ message: 'Missing bearer token' });
     return;
   }
+  const token = authHeader.slice(7)
   try {
-    req.user = jwt.verify(
-      authHeader.slice(7),
-      '',
+    const decoded = jwt.verify(
+      token, 
+      process.env.JWT_SECRET!,
       {
-        algorithms: ['none']
+        algorithms: ['HS256']
       }
     ) as JwtPayloadData;
+
+    req.user = decoded;
+    
     next();
   } catch {
     res.status(401).json({ message: 'Invalid or expired token' });
