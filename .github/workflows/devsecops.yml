@@ -1,0 +1,109 @@
+name: DevSecOps CI
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+
+permissions:
+  contents: read
+
+jobs:
+
+  # =====================================================
+  # 1. SECRET SCANNING - GITLEAKS
+  # =====================================================
+  gitleaks:
+    name: Secret Scanning - Gitleaks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+  # =====================================================
+  # 2. SAST - SEMGREP
+  # =====================================================
+  semgrep:
+    name: SAST - Semgrep
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create custom Semgrep rule
+        run: |
+          mkdir -p .semgrep
+
+          cat > .semgrep/sql-injection.yml <<'EOF'
+          rules:
+            - id: sql-injection-products-query
+              languages:
+                - javascript
+                - typescript
+              message: >
+                SQL Injection: user-controlled input is directly
+                interpolated into a SQL query. Use parameterized queries.
+              severity: ERROR
+              metadata:
+                category: security
+                cwe: CWE-89
+                owasp: A03:2021-Injection
+              patterns:
+                - pattern-inside: |
+                    ...
+                    const $NAME = $REQ.query.name;
+                    ...
+                - pattern: |
+                    `...${$NAME}...`
+          EOF
+
+      - name: Verify Semgrep rule exists
+        run: |
+          echo "Checking custom Semgrep rule..."
+          cat .semgrep/sql-injection.yml
+          test -f .semgrep/sql-injection.yml
+
+      - name: Run Semgrep
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/owasp-top-ten
+            p/javascript
+            p/nodejs
+            .semgrep/sql-injection.yml
+
+
+  # =====================================================
+  # 3. SCA - TRIVY
+  # =====================================================
+  trivy:
+    name: SCA - Trivy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 1
