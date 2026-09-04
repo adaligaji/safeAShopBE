@@ -12,7 +12,6 @@ on:
 
 permissions:
   contents: read
-  security-events: write
 
 jobs:
   security-pipeline:
@@ -21,27 +20,16 @@ jobs:
 
     steps:
 
-      # ==========================================
-      # PASO 1 - OBTENER EL CÓDIGO
-      # ==========================================
       - name: 1. Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-
-      # ==========================================
-      # PASO 2 - SECRET SCANNING
-      # ==========================================
       - name: 2. Secret Scanning - Gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-
-      # ==========================================
-      # PASO 3 - SAST
-      # ==========================================
       - name: 3. SAST - Semgrep
         uses: semgrep/semgrep-action@v1
         with:
@@ -50,12 +38,8 @@ jobs:
             p/javascript
             p/nodejs
 
-
-      # ==========================================
-      # PASO 4 - SCA
-      # ==========================================
       - name: 4. SCA - Trivy
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: fs
           scan-ref: .
@@ -63,10 +47,6 @@ jobs:
           ignore-unfixed: false
           exit-code: 1
 
-
-      # ==========================================
-      # PASO 5 - SECURITY GATE
-      # ==========================================
       - name: 5. Security Gate
         run: |
           echo "======================================"
@@ -76,5 +56,4 @@ jobs:
           echo "Semgrep:  PASS"
           echo "Trivy:    PASS"
           echo "======================================"
-          echo "No critical security issues detected."
           echo "Pipeline completed successfully."
