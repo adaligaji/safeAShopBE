@@ -1,59 +1,75 @@
-name: DevSecOps Pipeline
+name: DevSecOps CI
 
 on:
   push:
     branches:
       - main
-      - dev
+      - develop
   pull_request:
     branches:
       - main
-      - dev
+      - develop
 
 permissions:
   contents: read
 
 jobs:
-  security-pipeline:
-    name: DevSecOps Security Pipeline
+
+  # =====================================================
+  # 1. SECRET SCANNING - GITLEAKS
+  # =====================================================
+  gitleaks:
+    name: Secret Scanning - Gitleaks
     runs-on: ubuntu-latest
 
     steps:
-
-      - name: 1. Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: 2. Secret Scanning - Gitleaks
+      - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 3. SAST - Semgrep
+
+  # =====================================================
+  # 2. SAST - SEMGREP
+  # =====================================================
+  semgrep:
+    name: SAST - Semgrep
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
         uses: semgrep/semgrep-action@v1
         with:
-          config: |
+          config: >-
             p/owasp-top-ten
             p/javascript
             p/nodejs
 
-      - name: 4. SCA - Trivy
-        uses: aquasecurity/trivy-action@v0.35.0
+
+  # =====================================================
+  # 3. SCA - TRIVY
+  # =====================================================
+  trivy:
+    name: SCA - Trivy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: 1
-
-      - name: 5. Security Gate
-        run: |
-          echo "======================================"
-          echo "       DEVSECOPS SECURITY GATE"
-          echo "======================================"
-          echo "Gitleaks: PASS"
-          echo "Semgrep:  PASS"
-          echo "Trivy:    PASS"
-          echo "======================================"
-          echo "Pipeline completed successfully."
